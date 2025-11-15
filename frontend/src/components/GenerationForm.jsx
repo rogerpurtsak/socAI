@@ -5,16 +5,23 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Sparkles, Twitter, ImageIcon, FileText } from "lucide-react";
+import { Loader2, Sparkles, Twitter, ImageIcon, FileText, Film } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 
 export const GenerationForm = ({ onGenerate, isLoading }) => {
   const [postType, setPostType] = useState("twitter");
   const [description, setDescription] = useState("");
   const [story, setStory] = useState("");
+  const [videoPrompt, setVideoPrompt] = useState("");
   const [tone, setTone] = useState("humoorikas");
   const [numPosts, setNumPosts] = useState([3]);
+
+  // ⬇️ UUS: Sora video pikkus (4, 8, 12)
+  const [videoSeconds, setVideoSeconds] = useState(4);
+  const [videoSize, setVideoSize] = useState("720x1280");
+  const [videoWithText, setVideoWithText] = useState(false);
 
   const handleSinglePost = () => {
     onGenerate({
@@ -34,10 +41,20 @@ export const GenerationForm = ({ onGenerate, isLoading }) => {
     });
   };
 
+    const handleVideoGeneration = () => {
+      onGenerate({
+        type: "video",
+        videoPrompt,
+        videoSeconds,
+        videoWithText,
+      });
+    };
+
+
   return (
     <Card className="glass glass-hover p-6 animate-fade-in">
       <Tabs defaultValue="single" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-6 bg-muted/50">
+        <TabsList className="grid w-full grid-cols-3 mb-6 bg-muted/50">
           <TabsTrigger value="single" className="data-[state=active]:bg-primary/20">
             <Sparkles className="w-4 h-4 mr-2" />
             Single Post
@@ -46,50 +63,40 @@ export const GenerationForm = ({ onGenerate, isLoading }) => {
             <FileText className="w-4 h-4 mr-2" />
             Story to Posts
           </TabsTrigger>
+          <TabsTrigger value="video" className="data-[state=active]:bg-primary/20">
+            <Film className="w-4 h-4 mr-2" />
+            Sora Video
+          </TabsTrigger>
         </TabsList>
 
+        {/* SINGLE POST TAB */}
         <TabsContent value="single" className="space-y-6">
           <div>
-            <Label className="mb-3 block text-base">Post Type</Label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => setPostType("twitter")}
-                className={`p-4 rounded-lg border-2 transition-all ${
-                  postType === "twitter"
-                    ? "border-primary bg-primary/10"
-                    : "border-border bg-card/50 hover:border-primary/50"
-                }`}
-              >
-                <Twitter className="w-6 h-6 mb-2 mx-auto text-accent" />
-                <p className="font-semibold">Twitter/Meme</p>
-                <p className="text-xs text-muted-foreground">Viral-worthy posts</p>
-              </button>
-              <button
-                onClick={() => setPostType("regular")}
-                className={`p-4 rounded-lg border-2 transition-all ${
-                  postType === "regular"
-                    ? "border-primary bg-primary/10"
-                    : "border-border bg-card/50 hover:border-primary/50"
-                }`}
-              >
-                <ImageIcon className="w-6 h-6 mb-2 mx-auto text-secondary" />
-                <p className="font-semibold">Regular Post</p>
-                <p className="text-xs text-muted-foreground">Standard content</p>
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <Label htmlFor="description" className="mb-2 block text-base">
+            <Label htmlFor="post-description" className="mb-2 block text-base">
               Image Description
             </Label>
             <Textarea
-              id="description"
-              placeholder="Describe the image you want to generate... (e.g., 'A serene sunset over mountains with vibrant orange and purple skies')"
+              id="post-description"
+              placeholder="Describe the image or scenario you want to create a meme about..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="min-h-[120px] bg-input/50 border-border focus:border-primary resize-none"
+              className="min-h-[150px] bg-input/50 border-border focus:border-primary resize-none"
             />
+          </div>
+
+          <div>
+            <Label htmlFor="post-type" className="mb-2 block text-base">
+              Post Type
+            </Label>
+            <Select value={postType} onValueChange={setPostType}>
+              <SelectTrigger id="post-type" className="bg-input/50 border-border">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="glass border-border">
+                <SelectItem value="twitter">Twitter Meme (text overlay)</SelectItem>
+                <SelectItem value="regular">Regular Post (caption only)</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div>
@@ -112,26 +119,28 @@ export const GenerationForm = ({ onGenerate, isLoading }) => {
           <Button
             onClick={handleSinglePost}
             disabled={isLoading || !description.trim()}
-            className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-all hover:scale-[1.02] disabled:opacity-50"
+            className="w-full h-14 text-lg font-semibold bg-linear-to-r from-primary to-secondary hover:opacity-90 transition-all hover:scale-[1.02] disabled:opacity-50"
           >
             {isLoading ? (
               <>
                 <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                Generating Magic...
+                Generating Post...
               </>
             ) : (
               <>
                 <Sparkles className="w-5 h-5 mr-2" />
-                Generate Post
+                Generate Single Post
               </>
             )}
           </Button>
 
           <p className="text-xs text-center text-muted-foreground">
-            Powered by AI • Generates in ~10-15 seconds
+            Creates a single social media post with AI-generated image and caption
           </p>
         </TabsContent>
 
+
+        {/* MULTIPLE POSTS TAB */}
         <TabsContent value="multiple" className="space-y-6">
           <div>
             <Label htmlFor="story" className="mb-2 block text-base">
@@ -184,7 +193,7 @@ export const GenerationForm = ({ onGenerate, isLoading }) => {
           <Button
             onClick={handleMultiplePosts}
             disabled={isLoading || !story.trim()}
-            className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-secondary to-pink hover:opacity-90 transition-all hover:scale-[1.02] disabled:opacity-50"
+            className="w-full h-14 text-lg font-semibold bg-linear-to-r from-secondary to-pink hover:opacity-90 transition-all hover:scale-[1.02] disabled:opacity-50"
           >
             {isLoading ? (
               <>
@@ -203,6 +212,93 @@ export const GenerationForm = ({ onGenerate, isLoading }) => {
             Generates {numPosts[0]} unique posts from your content
           </p>
         </TabsContent>
+
+        {/* SORA VIDEO TAB */}
+        <TabsContent value="video" className="space-y-6">
+          <div>
+            <Label htmlFor="video-prompt" className="mb-2 block text-base">
+              Video Description
+            </Label>
+            <Textarea
+              id="video-prompt"
+              placeholder="Describe the video you want to create..."
+              value={videoPrompt}
+              onChange={(e) => setVideoPrompt(e.target.value)}
+              className="min-h-[150px] bg-input/50 border-border focus:border-primary resize-none"
+            />
+            <p className="text-xs text-muted-foreground mt-2">
+              💡 Tip: Be specific about visuals, camera movements, lighting, etc.
+            </p>
+          </div>
+
+          {/* UUS: kestus + suurus */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label className="mb-2 block text-base">Duration</Label>
+              <Select value={videoSeconds} onValueChange={setVideoSeconds}>
+                <SelectTrigger className="bg-input/50 border-border">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="glass border-border">
+                  <SelectItem value="4">4 seconds</SelectItem>
+                  <SelectItem value="8">8 seconds</SelectItem>
+                  <SelectItem value="12">12 seconds</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="mb-2 block text-base">Aspect ratio</Label>
+              <Select value={videoSize} onValueChange={setVideoSize}>
+                <SelectTrigger className="bg-input/50 border-border">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="glass border-border">
+                  <SelectItem value="720x1280">Portrait 9:16 (Reels/TikTok)</SelectItem>
+                  <SelectItem value="1280x720">Landscape 16:9 (YouTube)</SelectItem>
+                  <SelectItem value="1080x1080">Square 1:1</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* UUS: “meme text on/off” */}
+          <div className="flex items-center justify-between">
+            <div>
+              <Label className="text-base">Meme-style text overlay</Label>
+              <p className="text-xs text-muted-foreground">
+                Uses the same top/bottom text style as your Twitter memes
+              </p>
+            </div>
+            <Switch
+              checked={videoWithText}
+              onCheckedChange={setVideoWithText}
+            />
+          </div>
+
+          <Button
+            onClick={handleVideoGeneration}
+            disabled={isLoading || !videoPrompt.trim()}
+            className="w-full h-14 text-lg font-semibold bg-linear-to-r from-accent via-purple-500 to-pink-500 hover:opacity-90 transition-all hover:scale-[1.02] disabled:opacity-50"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                Generating Video...
+              </>
+            ) : (
+              <>
+                <Film className="w-5 h-5 mr-2" />
+                Generate with Sora
+              </>
+            )}
+          </Button>
+
+          <p className="text-xs text-center text-muted-foreground">
+            Powered by OpenAI Sora • Generates in ~30-60 seconds
+          </p>
+        </TabsContent>
+
       </Tabs>
     </Card>
   );
