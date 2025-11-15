@@ -133,6 +133,7 @@ function App() {
           body: JSON.stringify({
             prompt: data.videoPrompt,
             seconds: data.videoSeconds,
+            videoSize: data.videoSize,
             withText: data.videoWithText,
           }),
         });

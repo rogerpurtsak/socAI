@@ -543,7 +543,7 @@ app.post("/api/story-to-posts", async (req, res) => {
 // New endpoint for OpenAI Sora video generation (REAL SORA ONLY)
 app.post("/api/generate-video", async (req, res) => {
   try {
-    const { prompt, seconds, withText } = req.body;
+    const { prompt, seconds, videoSize, withText } = req.body;
 
     if (!prompt || String(prompt).trim().length < 10) {
       return res.status(400).json({
@@ -567,6 +567,21 @@ app.post("/api/generate-video", async (req, res) => {
         error: "seconds peab olema 4, 8 või 12 (või jätta saatmata).",
         received: seconds,
       });
+    }
+
+    // --- videoSize normaliseerimine ja valideerimine ---
+    const validSizes = ["720x1280", "1280x720", "1080x1080"];
+    let sizeNormalized = "720x1280"; // default (portrait)
+    
+    if (videoSize) {
+      if (validSizes.includes(videoSize)) {
+        sizeNormalized = videoSize;
+      } else {
+        return res.status(400).json({
+          error: `Invalid video size. Must be one of: ${validSizes.join(", ")}`,
+          received: videoSize,
+        });
+      }
     }
 
     // --- Kui withText = true, küsi Grokilt meme-tekst video peale ---
@@ -606,13 +621,13 @@ app.post("/api/generate-video", async (req, res) => {
       }
     }
 
-    console.log("Creating Sora video job with prompt:", prompt, "seconds:", secondsStr);
+    console.log("Creating Sora video job with prompt:", prompt, "seconds:", secondsStr, "size:", sizeNormalized);
 
     const videoJob = await openai.videos.create({
       model: "sora-2",
       prompt,
       seconds: secondsStr,
-      size: "720x1280", // portrait
+      size: sizeNormalized,
     });
 
     console.log("Sora job created:", videoJob);

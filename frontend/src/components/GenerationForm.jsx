@@ -113,6 +113,7 @@ export const GenerationForm = ({ onGenerate, isLoading }) => {
         type: "video",
         videoPrompt,
         videoSeconds,
+        videoSize,
         videoWithText,
       });
     };
