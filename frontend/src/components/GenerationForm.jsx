@@ -1,14 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Sparkles, Twitter, ImageIcon, FileText, Film } from "lucide-react";
+import { Loader2, Sparkles, Twitter, ImageIcon, FileText, Film, Mic, MicOff } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
+import { useSpeechRecognition } from "@/hooks/use-speech-recognition";
+import { toast } from "sonner";
 
 export const GenerationForm = ({ onGenerate, isLoading }) => {
   const [postType, setPostType] = useState("twitter");
@@ -22,6 +24,71 @@ export const GenerationForm = ({ onGenerate, isLoading }) => {
   const [videoSeconds, setVideoSeconds] = useState(4);
   const [videoSize, setVideoSize] = useState("720x1280");
   const [videoWithText, setVideoWithText] = useState(false);
+
+  // Speech recognition for description
+  const {
+    isListening: isListeningDescription,
+    transcript: descriptionTranscript,
+    isSupported: isSpeechSupported,
+    startListening: startDescriptionListening,
+    stopListening: stopDescriptionListening,
+    resetTranscript: resetDescriptionTranscript,
+  } = useSpeechRecognition();
+
+  // Speech recognition for story
+  const {
+    isListening: isListeningStory,
+    transcript: storyTranscript,
+    startListening: startStoryListening,
+    stopListening: stopStoryListening,
+    resetTranscript: resetStoryTranscript,
+  } = useSpeechRecognition();
+
+  // Update description when speech transcript changes
+  useEffect(() => {
+    if (descriptionTranscript) {
+      setDescription(descriptionTranscript);
+    }
+  }, [descriptionTranscript]);
+
+  // Update story when speech transcript changes
+  useEffect(() => {
+    if (storyTranscript) {
+      setStory(storyTranscript);
+    }
+  }, [storyTranscript]);
+
+  const toggleDescriptionListening = () => {
+    if (!isSpeechSupported) {
+      toast.error("Speech recognition is not supported in your browser");
+      return;
+    }
+
+    if (isListeningDescription) {
+      stopDescriptionListening();
+      toast.success("Recording stopped");
+    } else {
+      resetDescriptionTranscript();
+      startDescriptionListening();
+      toast.info("Listening... Speak your post idea");
+    }
+  };
+
+  const toggleStoryListening = () => {
+    if (!isSpeechSupported) {
+      toast.error("Speech recognition is not supported in your browser");
+      return;
+    }
+
+    if (isListeningStory) {
+      stopStoryListening();
+      toast.success("Recording stopped");
+    } else {
+      resetStoryTranscript();
+      startStoryListening();
+      toast.info("Listening... Tell your story");
+    }
+  };
 
   const handleSinglePost = () => {
     onGenerate({
@@ -72,16 +139,50 @@ export const GenerationForm = ({ onGenerate, isLoading }) => {
         {/* SINGLE POST TAB */}
         <TabsContent value="single" className="space-y-6">
           <div>
-            <Label htmlFor="post-description" className="mb-2 block text-base">
-              Image Description
-            </Label>
+            <div className="flex items-center justify-between mb-2">
+              <Label htmlFor="post-description" className="text-base">
+                Image Description
+              </Label>
+              <Button
+                type="button"
+                size="sm"
+                variant={isListeningDescription ? "destructive" : "outline"}
+                onClick={toggleDescriptionListening}
+                className={`${
+                  isListeningDescription 
+                    ? "animate-pulse bg-red-500 hover:bg-red-600" 
+                    : "border-secondary/20 hover:bg-secondary/10"
+                }`}
+              >
+                {isListeningDescription ? (
+                  <>
+                    <MicOff className="w-4 h-4 mr-2" />
+                    Stop Recording
+                  </>
+                ) : (
+                  <>
+                    <Mic className="w-4 h-4 mr-2" />
+                    Speak
+                  </>
+                )}
+              </Button>
+            </div>
             <Textarea
               id="post-description"
-              placeholder="Describe the image or scenario you want to create a meme about..."
+              placeholder="Describe the image or scenario you want to create a meme about... or use voice input!"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="min-h-[150px] bg-input/50 border-border focus:border-primary resize-none"
             />
+            {isListeningDescription && (
+              <p className="text-xs text-secondary mt-2 animate-pulse flex items-center">
+                <span className="relative flex h-2 w-2 mr-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                </span>
+                Listening... Describe your post idea
+              </p>
+            )}
           </div>
 
           <div>
@@ -143,16 +244,50 @@ export const GenerationForm = ({ onGenerate, isLoading }) => {
         {/* MULTIPLE POSTS TAB */}
         <TabsContent value="multiple" className="space-y-6">
           <div>
-            <Label htmlFor="story" className="mb-2 block text-base">
-              Your Story or Article
-            </Label>
+            <div className="flex items-center justify-between mb-2">
+              <Label htmlFor="story" className="text-base">
+                Your Story or Article
+              </Label>
+              <Button
+                type="button"
+                size="sm"
+                variant={isListeningStory ? "destructive" : "outline"}
+                onClick={toggleStoryListening}
+                className={`${
+                  isListeningStory 
+                    ? "animate-pulse bg-red-500 hover:bg-red-600" 
+                    : "border-secondary/20 hover:bg-secondary/10"
+                }`}
+              >
+                {isListeningStory ? (
+                  <>
+                    <MicOff className="w-4 h-4 mr-2" />
+                    Stop Recording
+                  </>
+                ) : (
+                  <>
+                    <Mic className="w-4 h-4 mr-2" />
+                    Speak
+                  </>
+                )}
+              </Button>
+            </div>
             <Textarea
               id="story"
-              placeholder="Paste your story, article, or long-form content here. The AI will extract key insights and create multiple engaging posts..."
+              placeholder="Paste your story, article, or long-form content here... or use voice input!"
               value={story}
               onChange={(e) => setStory(e.target.value)}
               className="min-h-[200px] bg-input/50 border-border focus:border-primary resize-none"
             />
+            {isListeningStory && (
+              <p className="text-xs text-secondary mt-2 animate-pulse flex items-center">
+                <span className="relative flex h-2 w-2 mr-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                </span>
+                Listening... Tell your story
+              </p>
+            )}
           </div>
 
           <div>
