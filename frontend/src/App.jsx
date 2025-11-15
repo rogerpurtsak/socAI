@@ -4,6 +4,7 @@ import { Hero } from "./components/Hero";
 import { GenerationForm } from "./components/GenerationForm";
 import { LivePreview } from "./components/LivePreview";
 import { PostsGallery } from "./components/PostsGallery";
+import { Toaster } from "./components/ui/toaster";
 
 function App() {
   const [loading, setLoading] = useState(false);
@@ -373,11 +374,14 @@ function App() {
       <footer className="border-t border-white/10 py-6 text-center">
         <div className="container mx-auto px-4">
           <p className="text-sm text-muted-foreground">
-            <span className="gradient-text font-semibold">socAI</span> •
-            Powered by xAI Grok • Built with ❤️ for creators
+            <span className="gradient-text font-semibold">socAI</span> • Powered
+            by xAI Grok • Built with ❤️ for creators
           </p>
         </div>
       </footer>
+
+      {/* Toast Notifications */}
+      <Toaster />
     </div>
   );
 }
